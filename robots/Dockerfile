@@ -6,6 +6,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Copy the install script in and run it
 COPY install-zsh.sh /tmp/install-zsh.sh
 RUN chmod +x /tmp/install-zsh.sh && /tmp/install-zsh.sh && rm /tmp/install-zsh.sh
+RUN echo 'source /opt/ros/jazzy/setup.zsh' >> /root/.zshrc
 
 WORKDIR /app
 

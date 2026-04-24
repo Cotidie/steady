@@ -2,7 +2,7 @@ services:
   ros2-jazzy:
     build: .
     image: ros2-jazzy-zsh:latest
-    container_name: ros2-jazzy
+    container_name: ros2
     stdin_open: true    # -i
     tty: true           # -t
     network_mode: host  # --network=host
