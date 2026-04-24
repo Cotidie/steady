@@ -1,0 +1,21 @@
+services:
+  ros2-jazzy:
+    build: .
+    image: ros2-jazzy-zsh:latest
+    container_name: ros2-jazzy
+    stdin_open: true    # -i
+    tty: true           # -t
+    network_mode: host  # --network=host
+    command: zsh
+    environment:
+      DISPLAY: ${DISPLAY}
+      QT_X11_NO_MITSHM: 1
+      QT_QPA_PLATFORM: xcb
+      XDG_RUNTIME_DIR: /tmp/runtime-root
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - .:/app
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
