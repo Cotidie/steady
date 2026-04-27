@@ -37,11 +37,173 @@ workspace/
 - `devel/setup.zsh`: generated environment setup file.
 
 ### 1.3. Nodes
-![ROS Node](.images/README-node.png)
+![ROS Node](.images/README-node.png)  
 
 - Python scripts usually live in `scripts/`, use `#!/usr/bin/env python3`, and must be executable.
 - C++ nodes must be added to `CMakeLists.txt`, linked to `${catkin_LIBRARIES}`, and built with `catkin_make`.
 - `rosrun` uses the executable name exactly: Python keeps `.py`; compiled C++ usually does not.
+
+### 1.4. Params
+![params](.images/README-params.png)  
+
+Params are runtime configuration values stored on the ROS parameter server, which is started by `roscore`.
+
+Use params for settings that nodes read at startup or occasionally during runtime: robot names, speed limits, debug flags, calibration constants, file paths, and feature toggles. Do not use params for high-rate data; use topics for that.
+
+Common CLI usage:
+
+```bash
+rosparam list
+rosparam set /robot/name steady
+rosparam set /robot/max_speed 1.5
+rosparam get /robot/name
+rosparam get /robot
+rosparam delete /robot/max_speed
+```
+
+Param names are hierarchical. A leading `/` makes the name absolute:
+
+```text
+/robot/name
+/robot/max_speed
+/camera/exposure
+```
+
+Use `/robot` as a namespace/container, then put values under it. Avoid trying to use the same name as both a scalar and a container:
+
+```bash
+rosparam set /robot steady        # /robot is a string
+rosparam set /robot/speed 1.5     # bad shape: /robot now also needs children
+```
+
+Prefer:
+
+```bash
+rosparam set /robot/name steady
+rosparam set /robot/speed 1.5
+```
+
+Read params from Python:
+
+```python
+robot_name = rospy.get_param("/robot/name", "unnamed")
+max_speed = rospy.get_param("/robot/max_speed", 1.0)
+
+rospy.set_param("/robot/debug", True)
+```
+
+Private params use `~` and belong to one node namespace. This is common in reusable nodes:
+
+```python
+rate_hz = rospy.get_param("~rate_hz", 10)
+```
+
+### 1.5. Launch
+Launch files start multiple nodes and set their configuration from one command. They usually live in a package's `launch/` folder and use `.launch` XML files.
+
+Minimal launch file:
+
+```xml
+<!-- src/tutorial/launch/robot_status.launch -->
+<launch>
+  <node pkg="tutorial" type="publisher.py" name="robot_status_publisher" output="screen" />
+  <node pkg="tutorial" type="subscriber.py" name="robot_status_subscriber" output="screen" />
+</launch>
+```
+
+Run it:
+
+```bash
+roslaunch tutorial robot_status.launch
+```
+
+Practical launch features:
+
+```xml
+<launch>
+  <arg name="rate_hz" default="2" />
+
+  <param name="/robot/name" value="steady" />
+  <param name="/robot/max_speed" value="1.5" />
+
+  <node pkg="tutorial" type="publisher.py" name="robot_status_publisher" output="screen">
+    <param name="rate_hz" value="$(arg rate_hz)" />
+  </node>
+
+  <node pkg="tutorial" type="subscriber.py" name="robot_status_subscriber" output="screen" />
+</launch>
+```
+
+Launch concepts:
+
+- `<node>` starts one node from a package.
+- `pkg` is the ROS package name.
+- `type` is the executable file name for Python scripts, or the compiled executable name for C++ nodes.
+- `name` is the ROS graph node name.
+- `output="screen"` prints logs to your terminal.
+- `<arg>` creates a launch-time variable.
+- `<param>` sets a parameter before nodes start.
+
+Override args from the command line:
+
+```bash
+roslaunch tutorial robot_status.launch rate_hz:=5
+```
+
+Inspect after launching:
+
+```bash
+rosnode list
+rostopic list
+rosparam get /robot/name
+```
+
+### 1.6. Bags
+Bags record and replay ROS topic traffic. They are useful for debugging, demos, regression testing, and working without the real robot connected.
+
+```bash
+# record one topic
+rosbag record /robot_status
+
+# record multiple topics
+rosbag record /robot_status /rosout
+
+# record everything
+rosbag record -a
+
+# choose the output file
+rosbag record -O robot_status.bag /robot_status
+
+# inspect a bag
+rosbag info robot_status.bag
+
+# replay a bag
+rosbag play robot_status.bag
+
+# replay at a different speed
+rosbag play -r 0.5 robot_status.bag
+rosbag play -r 2.0 robot_status.bag
+
+# loop playback
+rosbag play -l robot_status.bag
+```
+
+Common workflow:
+
+```bash
+# terminal 1
+roscore
+
+# terminal 2
+source devel/setup.zsh
+rosrun tutorial subscriber.py
+
+# terminal 3
+source devel/setup.zsh
+rosbag play robot_status.bag
+```
+
+During playback, ROS republishes the recorded topics. A subscriber does not care whether messages come from the original publisher or from `rosbag play`, as long as the topic name and message type match.
 
 ## 2. Quick Start
 ### 2.1. Create Workspace and Package
@@ -113,7 +275,7 @@ rosnode info /first_node
 ## 3. Communication (Topic)
 Topics use a publish/subscribe model. Publishers send typed messages to a topic; subscribers register callbacks for messages on that topic.
 
-### 3.1. With Nodes
+### 3.1. Pub/Sub (Topic)
 #### Python
 ```python
 from std_msgs.msg import String
@@ -139,12 +301,171 @@ void chatterCallback(const std_msgs::String::ConstPtr& msg) {
 }
 ```
 
-#### Spinning and Loops
-Use `rospy.spin()` / `ros::spin()` for nodes that mostly wait for callbacks. Use `while not rospy.is_shutdown()` / `while (ros::ok())` with `Rate` for nodes that publish or do repeated work. In C++, call `ros::spinOnce()` inside the loop if the same node also needs to process callbacks.
+#### Message Types
+Built-in messages come from packages such as `std_msgs`, `geometry_msgs`, and `sensor_msgs`. For example, `std_msgs/String` has one field:
+
+```text
+string data
+```
+
+Use built-in messages when they already match the data. Define a custom message when the topic has domain-specific fields that should travel together.
+
+#### Custom Message
+Custom messages live in `msg/` and use one field per line:
+
+```msg
+# src/custom_msgs/msg/RobotStatus.msg
+int64 temperature
+bool motors_up
+string debug_msg
+```
+
+ROS generates language-specific types after `catkin_make`:
+
+```python
+from custom_msgs.msg import RobotStatus
+```
+
+```cpp
+#include <custom_msgs/RobotStatus.h>
+```
+
+Message rules:
+
+- File names use `CamelCase.msg`; generated type names match the file name.
+- Field names use lowercase words with underscores, such as `battery_level`.
+- Supported primitive types include `bool`, `int32`, `int64`, `float32`, `float64`, `string`, and `time`.
+- Arrays use `type[] name`, such as `float64[] readings`.
+- Other messages can be fields, such as `std_msgs/Header header`.
+
+Enable custom message generation:
+
+```cmake
+find_package(catkin REQUIRED COMPONENTS message_generation roscpp rospy std_msgs)
+
+add_message_files(FILES RobotStatus.msg)
+generate_messages(DEPENDENCIES std_msgs)
+
+catkin_package(CATKIN_DEPENDS message_runtime roscpp rospy std_msgs)
+```
+
+```xml
+<build_depend>message_generation</build_depend>
+<exec_depend>message_runtime</exec_depend>
+```
+
+After adding or changing `.msg` files:
+
+```bash
+catkin_make
+source devel/setup.zsh
+```
+
+If another package uses this message, add `custom_msgs` as a dependency for that package:
+
+```cmake
+find_package(catkin REQUIRED COMPONENTS roscpp rospy custom_msgs)
+catkin_package(CATKIN_DEPENDS roscpp rospy custom_msgs)
+```
+
+```xml
+<depend>custom_msgs</depend>
+```
+
+Use custom messages exactly like built-in messages: import/include the generated type, use it as the topic type, fill its fields, then publish or read those fields in a callback.
+
+Python publisher:
+
+```python
+#!/usr/bin/env python3
+import rospy
+from custom_msgs.msg import RobotStatus
+
+rospy.init_node("robot_status_publisher")
+publisher = rospy.Publisher("robot_status", RobotStatus, queue_size=10)
+rate = rospy.Rate(1)
+
+while not rospy.is_shutdown():
+    msg = RobotStatus()
+    msg.temperature = 42
+    msg.motors_up = True
+    msg.debug_msg = "nominal"
+
+    publisher.publish(msg)
+    rate.sleep()
+```
+
+Python subscriber:
+
+```python
+#!/usr/bin/env python3
+import rospy
+from custom_msgs.msg import RobotStatus
+
+def callback(msg):
+    rospy.loginfo(
+        "temperature=%d motors_up=%s debug_msg=%s",
+        msg.temperature,
+        msg.motors_up,
+        msg.debug_msg,
+    )
+
+rospy.init_node("robot_status_subscriber")
+subscriber = rospy.Subscriber("robot_status", RobotStatus, callback)
+rospy.spin()
+```
+
+C++ publisher:
+
+```cpp
+#include <ros/ros.h>
+#include <custom_msgs/RobotStatus.h>
+
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "robot_status_publisher");
+  ros::NodeHandle nh;
+  ros::Publisher publisher = nh.advertise<custom_msgs::RobotStatus>("robot_status", 10);
+  ros::Rate rate(1);
+
+  while (ros::ok()) {
+    custom_msgs::RobotStatus msg;
+    msg.temperature = 42;
+    msg.motors_up = true;
+    msg.debug_msg = "nominal";
+
+    publisher.publish(msg);
+    rate.sleep();
+  }
+}
+```
+
+C++ subscriber:
+
+```cpp
+#include <ros/ros.h>
+#include <custom_msgs/RobotStatus.h>
+
+void callback(const custom_msgs::RobotStatus::ConstPtr& msg) {
+  ROS_INFO(
+      "temperature=%ld motors_up=%s debug_msg=%s",
+      msg->temperature,
+      msg->motors_up ? "true" : "false",
+      msg->debug_msg.c_str());
+}
+
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "robot_status_subscriber");
+  ros::NodeHandle nh;
+  ros::Subscriber subscriber = nh.subscribe("robot_status", 10, callback);
+  ros::spin();
+}
+```
 
 #### Inspect Topics
 ```bash
 rostopic list
+rostopic info /robot_status
+rostopic echo /robot_status
 rostopic info /chatter_cpp
 rostopic echo /chatter_cpp
 ```
@@ -162,7 +483,78 @@ In C++, use `ros::init_options::AnonymousName`:
 ros::init(argc, argv, "publisher_cpp", ros::init_options::AnonymousName);
 ```
 
-### 3.2. With Services
+### 3.2. Client-Server (Service)
+Services use a synchronous request/response model. They fit quick actions where a client asks once and waits for one result, such as adding numbers, resetting state, saving data, or triggering a robot action.
+
+#### Service Type
+A `.srv` file defines the request above `---` and the response below it:
+
+```srv
+# src/tutorial/srv/AddTwoInts.srv
+int64 a
+int64 b
+---
+int64 sum
+```
+
+After `catkin_make`, ROS generates:
+
+```python
+AddTwoInts          # full service type
+AddTwoIntsRequest   # request fields: a, b
+AddTwoIntsResponse  # response fields: sum
+```
+
+#### Server
+One service name is one endpoint. This node exposes `/add_two_ints`:
+
+```python
+from tutorial.srv import AddTwoInts, AddTwoIntsResponse
+
+def handle_add_two_ints(req):
+    return AddTwoIntsResponse(req.a + req.b)
+
+service = rospy.Service("add_two_ints", AddTwoInts, handle_add_two_ints)
+rospy.spin()
+```
+
+#### Client
+Clients wait for the endpoint, create a proxy, then call it like a function:
+
+```python
+from tutorial.srv import AddTwoInts
+
+rospy.wait_for_service("add_two_ints")
+add_two_ints = rospy.ServiceProxy("add_two_ints", AddTwoInts)
+response = add_two_ints(3, 5)
+print(response.sum)
+```
+
+#### Build and Source
+Custom `.srv` files need message generation:
+
+```cmake
+find_package(catkin REQUIRED COMPONENTS message_generation rospy std_msgs)
+
+add_service_files(FILES AddTwoInts.srv)
+generate_messages(DEPENDENCIES std_msgs)
+
+catkin_package(CATKIN_DEPENDS message_runtime rospy std_msgs)
+```
+
+```xml
+<build_depend>message_generation</build_depend>
+<exec_depend>message_runtime</exec_depend>
+```
+
+After adding or changing `.srv` files:
+
+```bash
+catkin_make
+source devel/setup.zsh
+```
+
+The `source` step matters because generated Python modules such as `tutorial.srv` live under `devel/lib/python3/dist-packages`.
 
 ## 4. Customization
 

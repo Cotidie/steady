@@ -1,0 +1,12 @@
+<launch>
+  <arg name="rate_hz" default="2" />
+
+  <param name="/robot/name" value="steady" />
+  <param name="/robot/max_speed" value="1.5" />
+
+  <node pkg="tutorial" type="publisher.py" name="robot_status_publisher" output="screen">
+    <param name="rate_hz" value="$(arg rate_hz)" />
+  </node>
+
+  <node pkg="tutorial" type="subscriber.py" name="robot_status_subscriber" output="screen" />
+</launch>

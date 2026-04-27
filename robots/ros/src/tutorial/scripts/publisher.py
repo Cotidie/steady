@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 
 import rospy
-from std_msgs.msg import String
+from custom_msgs.msg import RobotStatus
 
 def main():
     rospy.init_node('publisher')
-    publisher = rospy.Publisher('chatter_py', String, queue_size=10)
-    rate = rospy.Rate(2)  # 2 Hz
+    publisher = rospy.Publisher('robot_status', RobotStatus, queue_size=10)
+    rate_hz = rospy.get_param('~rate_hz', 2)
+    rate = rospy.Rate(rate_hz)
 
     while not rospy.is_shutdown():
-        msg = String()
-        msg.data = "Hello, ROS!"
+        msg = RobotStatus()
+        msg.temperature = 42
+        msg.motors_up = True
+        msg.debug_msg = "Hello from custom_msgs/RobotStatus"
+
         publisher.publish(msg)
         rate.sleep()
 
