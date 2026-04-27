@@ -120,8 +120,11 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(second_node scripts/second_node.cpp)
-target_link_libraries(second_node ${catkin_LIBRARIES})
+add_executable(publisher scripts/publisher.cpp)
+target_link_libraries(publisher ${catkin_LIBRARIES})
+
+add_executable(subscriber scripts/subscriber.cpp)
+target_link_libraries(subscriber ${catkin_LIBRARIES})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}

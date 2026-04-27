@@ -43,11 +43,11 @@ workspace/
 - C++ nodes must be added to `CMakeLists.txt`, linked to `${catkin_LIBRARIES}`, and built with `catkin_make`.
 - `rosrun` uses the executable name exactly: Python keeps `.py`; compiled C++ usually does not.
 
-## 2. Guide
+## 2. Quick Start
 ### 2.1. Create Workspace and Package
 ```bash
-mkdir -p ~/catkin_ws/src
-cd ~/catkin_ws
+mkdir -p ~/workspace/src
+cd ~/workspace
 catkin_make
 source devel/setup.zsh
 
@@ -71,6 +71,8 @@ source devel/setup.zsh
 
 Use `setup.zsh` for zsh. Use `setup.bash` for bash.
 
+Re-run `source devel/setup.zsh` when opening a new terminal, after creating a package, or after changing package dependencies/interfaces. Normal node code edits do not usually need re-sourcing.
+
 ### 2.3. Run Nodes
 ```bash
 # terminal 1
@@ -88,7 +90,6 @@ rosrun tutorial first_node.py
 
 # C++ node
 catkin_make
-source devel/setup.zsh
 rosrun tutorial second_node
 ```
 
@@ -102,18 +103,70 @@ target_link_libraries(second_node ${catkin_LIBRARIES})
 ```bash
 # packages
 rospack list
-rospack list-names
 rospack find tutorial
 
 # nodes
 rosnode list
 rosnode info /first_node
-
-# master
-echo $ROS_MASTER_URI
 ```
 
-## 3. Common Issues
+## 3. Communication (Topic)
+Topics use a publish/subscribe model. Publishers send typed messages to a topic; subscribers register callbacks for messages on that topic.
+
+### 3.1. With Nodes
+#### Python
+```python
+from std_msgs.msg import String
+
+publisher = rospy.Publisher("chatter_py", String, queue_size=10)
+subscriber = rospy.Subscriber("chatter_py", String, callback)
+
+def callback(msg):
+    rospy.loginfo(msg.data)
+```
+
+#### C++
+
+```cpp
+#include <std_msgs/String.h>
+
+ros::NodeHandle nh;  // Creates publishers/subscribers connected to the ROS graph.
+ros::Publisher publisher = nh.advertise<std_msgs::String>("chatter_cpp", 10);
+ros::Subscriber subscriber = nh.subscribe("chatter_cpp", 10, chatterCallback);
+
+void chatterCallback(const std_msgs::String::ConstPtr& msg) {
+    ROS_INFO("%s", msg->data.c_str());
+}
+```
+
+#### Spinning and Loops
+Use `rospy.spin()` / `ros::spin()` for nodes that mostly wait for callbacks. Use `while not rospy.is_shutdown()` / `while (ros::ok())` with `Rate` for nodes that publish or do repeated work. In C++, call `ros::spinOnce()` inside the loop if the same node also needs to process callbacks.
+
+#### Inspect Topics
+```bash
+rostopic list
+rostopic info /chatter_cpp
+rostopic echo /chatter_cpp
+```
+
+#### Anonymous Nodes
+Node names must be unique. If you want to run multiple copies of the same Python node, use `anonymous=True`:
+
+```python
+rospy.init_node("publisher", anonymous=True)
+```
+
+In C++, use `ros::init_options::AnonymousName`:
+
+```cpp
+ros::init(argc, argv, "publisher_cpp", ros::init_options::AnonymousName);
+```
+
+### 3.2. With Services
+
+## 4. Customization
+
+## 5. Common Issues
 ### `rosrun` cannot find a node
 ```bash
 rosrun tutorial first_node.py   # Python script filename
@@ -127,6 +180,15 @@ chmod +x src/tutorial/scripts/first_node.py
 ```
 
 ### VS Code cannot find `<ros/ros.h>`
+ROS include paths come from catkin/CMake, not from the `.cpp` file alone. A C++ file should be bound to a CMake target:
+
+```cmake
+add_executable(testone scripts/testone.cpp)
+target_link_libraries(testone ${catkin_LIBRARIES})
+```
+
+Then rebuild so the IDE/build system sees the target:
+
 ```bash
 catkin_make -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 ```
