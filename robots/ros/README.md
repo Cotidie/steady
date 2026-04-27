@@ -2,6 +2,39 @@
 
 Concise ROS 1 / Noetic notes for this catkin workspace.
 
+- [ROS 1](#ros-1)
+  - [1. Concepts](#1-concepts)
+    - [1.1. Core Architecture](#11-core-architecture)
+    - [1.2. Catkin](#12-catkin)
+    - [1.3. Nodes](#13-nodes)
+    - [1.4. Params](#14-params)
+    - [1.5. Launch](#15-launch)
+    - [1.6. Bags](#16-bags)
+  - [2. Quick Start](#2-quick-start)
+    - [2.1. Create Workspace and Package](#21-create-workspace-and-package)
+    - [2.2. Build and Source](#22-build-and-source)
+    - [2.3. Run Nodes](#23-run-nodes)
+    - [2.4. Inspect ROS](#24-inspect-ros)
+  - [3. Communication (Topic)](#3-communication-topic)
+    - [3.1. Pub/Sub (Topic)](#31-pubsub-topic)
+      - [Python](#python)
+      - [C++](#c)
+      - [Message Types](#message-types)
+      - [Custom Message](#custom-message)
+      - [Inspect Topics](#inspect-topics)
+      - [Anonymous Nodes](#anonymous-nodes)
+    - [3.2. Client-Server (Service)](#32-client-server-service)
+      - [Service Type](#service-type)
+      - [Server](#server)
+      - [Client](#client)
+      - [Build and Source](#build-and-source)
+  - [4. Common Issues](#4-common-issues)
+    - [`rosrun` cannot find a node](#rosrun-cannot-find-a-node)
+    - [`/usr/bin/env: 'python': No such file or directory`](#usrbinenv-python-no-such-file-or-directory)
+    - [VS Code cannot find `<ros/ros.h>`](#vs-code-cannot-find-rosrosh)
+    - [`sudo: unable to resolve host noetic`](#sudo-unable-to-resolve-host-noetic)
+
+
 ## 1. Concepts
 ### 1.1. Core Architecture
 
@@ -556,9 +589,7 @@ source devel/setup.zsh
 
 The `source` step matters because generated Python modules such as `tutorial.srv` live under `devel/lib/python3/dist-packages`.
 
-## 4. Customization
-
-## 5. Common Issues
+## 4. Common Issues
 ### `rosrun` cannot find a node
 ```bash
 rosrun tutorial first_node.py   # Python script filename
