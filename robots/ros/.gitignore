@@ -1,0 +1,70 @@
+# ROS Noetic / catkin build artifacts
+build/
+devel/
+install/
+log/
+logs/
+.catkin_tools/
+.catkin_workspace
+catkin_generated/
+
+# Generated ROS files
+msg_gen/
+srv_gen/
+action_gen/
+msg/*Action.msg
+msg/*ActionFeedback.msg
+msg/*ActionGoal.msg
+msg/*ActionResult.msg
+msg/*Feedback.msg
+msg/*Goal.msg
+msg/*Result.msg
+
+# CMake and compiler artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+*.cmake
+*.o
+*.so
+*.a
+*.pyc
+
+# Runtime data
+*.bag
+*.bag.active
+*.db3
+*.log
+*.pid
+*.swp
+*.tmp
+core
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+
+# ROS dependency management
+rosdep.yaml
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.code-workspace
+*~
+.project
+.cproject
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
