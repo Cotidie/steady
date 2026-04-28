@@ -15,7 +15,7 @@ Concise ROS 1 / Noetic notes for this catkin workspace.
     - [2.2. Build and Source](#22-build-and-source)
     - [2.3. Run Nodes](#23-run-nodes)
     - [2.4. Inspect ROS](#24-inspect-ros)
-  - [3. Communication (Topic)](#3-communication-topic)
+  - [3. Communication](#3-communication)
     - [3.1. Pub/Sub (Topic)](#31-pubsub-topic)
       - [Python](#python)
       - [C++](#c)
@@ -28,11 +28,16 @@ Concise ROS 1 / Noetic notes for this catkin workspace.
       - [Server](#server)
       - [Client](#client)
       - [Build and Source](#build-and-source)
-  - [4. Common Issues](#4-common-issues)
+  - [3.3. Action](#33-action)
+    - [Package Convention](#package-convention)
+    - [Message Format](#message-format)
+    - [Client/Server](#clientserver)
+  - [4. Questions/Issues](#4-questionsissues)
     - [`rosrun` cannot find a node](#rosrun-cannot-find-a-node)
     - [`/usr/bin/env: 'python': No such file or directory`](#usrbinenv-python-no-such-file-or-directory)
     - [VS Code cannot find `<ros/ros.h>`](#vs-code-cannot-find-rosrosh)
     - [`sudo: unable to resolve host noetic`](#sudo-unable-to-resolve-host-noetic)
+    - [Is it okay to skip `roscpp`? Will `CMakeLists.txt` still be needed?](#is-it-okay-to-skip-roscpp-will-cmakeliststxt-still-be-needed)
 
 
 ## 1. Concepts
@@ -305,7 +310,7 @@ rosnode list
 rosnode info /first_node
 ```
 
-## 3. Communication (Topic)
+## 3. Communication
 Topics use a publish/subscribe model. Publishers send typed messages to a topic; subscribers register callbacks for messages on that topic.
 
 ### 3.1. Pub/Sub (Topic)
@@ -589,7 +594,48 @@ source devel/setup.zsh
 
 The `source` step matters because generated Python modules such as `tutorial.srv` live under `devel/lib/python3/dist-packages`.
 
-## 4. Common Issues
+## 3.3. Action
+![ROS Action](.images/README-action.png)  
+
+(short description on ROS Action. and versus ROS Service, communication is based on topics, get status and feedback on the current goal)
+- create a package with `actionlib_msgs` dependency
+  - (what does it enable?)
+- add `message_generation` exec dependency to package.xml
+  - (what does it enable?)
+
+### Package Convention
+```bash
+root/
+  src/
+    package/
+      action/
+        - *.action  # custom action file
+```
+
+### Message Format
+```bash
+# goal
+# (what is this for)
+
+---
+# result
+# (what is this for)
+
+---
+# feedback
+# (what is this for)
+```
+
+then build the action file using `catkin_make`. This will create six(?) variants of action messages.
+
+### Client/Server
+```py
+
+
+```
+
+
+## 4. Questions/Issues
 ### `rosrun` cannot find a node
 ```bash
 rosrun tutorial first_node.py   # Python script filename
@@ -628,3 +674,23 @@ This is a container hostname warning from `sudo`, not a ROS error. Avoid `sudo` 
 ```bash
 chmod +x src/tutorial/scripts/first_node.py
 ```
+
+### VS Code cannot find generated Python message types (e.g. `CountUntilAction`)
+
+Generated Python modules live in `devel/lib/python3/dist-packages/` after `catkin_make`. Pylance needs to know that path:
+
+```json
+// .vscode/settings.json
+"python.analysis.extraPaths": [
+    "${workspaceFolder}/devel/lib/python3/dist-packages",
+    "/opt/ros/noetic/lib/python3/dist-packages"
+]
+```
+
+After adding the path or after any `catkin_make` that generates new types, reload VS Code (`Ctrl+Shift+P` → `Developer: Reload Window`) so Pylance re-indexes the devel directory.
+
+### Is it okay to skip `roscpp`? Will `CMakeLists.txt` still be needed?
+
+- Skipping `roscpp` is fine — Python-only packages are common
+- `CMakeLists.txt` is still required; catkin reads it for every package regardless of language
+- `roscpp` is worth adding for: high-rate control loops, hardware drivers (C SDKs), real-time kernels, or C++ libraries (Eigen, PCL) that lack Python bindings
