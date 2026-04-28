@@ -31,12 +31,13 @@ Concise ROS 1 / Noetic notes for this catkin workspace.
   - [3.3. Action](#33-action)
     - [Package Convention](#package-convention)
     - [Message Format](#message-format)
-    - [Client/Server](#clientserver)
+    - [Server/Client](#serverclient)
   - [4. Questions/Issues](#4-questionsissues)
     - [`rosrun` cannot find a node](#rosrun-cannot-find-a-node)
     - [`/usr/bin/env: 'python': No such file or directory`](#usrbinenv-python-no-such-file-or-directory)
     - [VS Code cannot find `<ros/ros.h>`](#vs-code-cannot-find-rosrosh)
     - [`sudo: unable to resolve host noetic`](#sudo-unable-to-resolve-host-noetic)
+    - [VS Code cannot find generated Python message types (e.g. `CountUntilAction`)](#vs-code-cannot-find-generated-python-message-types-eg-countuntilaction)
     - [Is it okay to skip `roscpp`? Will `CMakeLists.txt` still be needed?](#is-it-okay-to-skip-roscpp-will-cmakeliststxt-still-be-needed)
 
 
@@ -599,9 +600,10 @@ The `source` step matters because generated Python modules such as `tutorial.srv
 
 (short description on ROS Action. and versus ROS Service, communication is based on topics, get status and feedback on the current goal)
 - create a package with `actionlib_msgs` dependency
-  - (what does it enable?)
+  - needed to compile .action into 7 messages
 - add `message_generation` exec dependency to package.xml
   - (what does it enable?)
+- echo action topics for monitoring
 
 ### Package Convention
 ```bash
@@ -628,12 +630,21 @@ root/
 
 then build the action file using `catkin_make`. This will create six(?) variants of action messages.
 
-### Client/Server
+### Server/Client
+![Action Server](.images/README-action-server.png)  
 ```py
-
+(minimum snippet for custom ActionServer, not SimpleActionServer)
 
 ```
 
+```py
+(minimum snippet for custom ActionClient, not SimpleActionClient )
+- send goal
+- get feedback
+- cancel a goal
+```
+
+results' status types (refer to actionlib_msgs/GoalStatus.msg)
 
 ## 4. Questions/Issues
 ### `rosrun` cannot find a node
