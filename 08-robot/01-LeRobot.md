@@ -6,8 +6,19 @@
 - 모델, 데이터셋, 도구를 Hugging Face Hub에서 받아 쓰고, 직접 만든 것도 공유 가능
 - 저장소: https://github.com/huggingface/lerobot
 
+## 사용 방식
+
+| 용도 | 방식 | 예 |
+|---|---|---|
+| 데이터 로드, 프레임 인덱싱, 커스텀 학습 루프 | Python API | `LeRobotDataset("lerobot/aloha_static_coffee")`, `dataset[0]` |
+| 데이터 수집, 학습, 평가, Hub 업로드 | CLI 스크립트 | `lerobot-record`, `lerobot-train`, `lerobot-eval` |
+
+CLI 스크립트 내부도 같은 Python API를 호출한다.
+
 ## 데이터셋 구조
 `LeRobotDataset("lerobot/aloha_static_coffee")` 기준.
+
+계층은 두 단계다. `LeRobotDataset`은 파이썬 객체이고, 아래 첫 표는 그 객체의 속성 목록이다. 그중 `hf_dataset`은 프레임 하나가 한 행인 테이블이며, 두 번째 표는 그 테이블의 열이다. 나머지 속성(`episode_data_index`, `stats`, `info`)은 이 테이블을 설명하는 메타데이터다.
 
 | 구성 요소 | 타입 | 내용 |
 |---|---|---|
