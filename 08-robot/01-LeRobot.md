@@ -5,7 +5,9 @@
 - pytorch와 같이, 로봇 학습 용도의 프레임워크
 - 모델, 데이터셋, 도구를 Hugging Face Hub에서 받아 쓰고, 직접 만든 것도 공유 가능
 - 저장소: https://github.com/huggingface/lerobot
-- 사용 방식은 둘: CLI 스크립트(`lerobot-record`, `lerobot-train`, `lerobot-eval`)로 수집, 학습, 평가. Python API(`LeRobotDataset`)로 데이터 로드와 커스텀 학습
+- 사용 방식은 둘: 
+  - CLI 스크립트(`lerobot-record`, `lerobot-train`, `lerobot-eval`)로 수집, 학습, 평가. 
+  - Python API(`LeRobotDataset`)로 데이터 로드와 커스텀 학습
 - CLI는 Python API 위에 만들어짐. 일상 작업은 CLI, 자체 모델이나 파이프라인 연동은 Python API
 
 ## 데이터셋 구조
