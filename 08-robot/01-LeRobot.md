@@ -9,39 +9,37 @@
 - CLI는 Python API 위에 만들어짐. 일상 작업은 CLI, 자체 모델이나 파이프라인 연동은 Python API
 
 ## 데이터셋 구조
-`LeRobotDataset("lerobot/aloha_static_coffee")` 기준.
+`LeRobotDataset("lerobot/aloha_static_coffee")`로 로드한 객체의 속성. 저장 포맷은 주석 참조.
 
-계층은 두 단계다. `LeRobotDataset`은 파이썬 객체이고, 아래 첫 표는 그 객체의 속성 목록이다. 그중 `hf_dataset`은 프레임 하나가 한 행인 테이블이며, 두 번째 표는 그 테이블의 열이다. 나머지 속성(`episode_data_index`, `stats`, `info`)은 이 테이블을 설명하는 메타데이터다.
+```python
+dataset = LeRobotDataset("lerobot/aloha_static_coffee")
 
-| 구성 요소 | 타입 | 내용 |
-|---|---|---|
-| `hf_dataset` | HF Dataset (Parquet) | 프레임 단위 데이터. 아래 필드 참조 |
-| `episode_data_index` | dict of 1D int64 | `from`: 에피소드 시작 프레임 인덱스, `to`: 마지막 프레임 인덱스 |
-| `stats` | dict | feature별 max, mean, min, std. 예: `observation.images.cam_high.max` 는 (채널, 1, 1) 텐서 |
-| `info` | dict | `codebase_version`(str), `fps`(float), `video`(bool), `encoding`(ffmpeg 옵션 dict) |
-| `videos_dir` | Path | mp4 또는 png가 저장된 디렉토리 |
-| `camera_keys` | list[str] | 카메라 feature에 접근하는 key 목록 |
+dataset.hf_dataset                    # Hugging Face Dataset, Parquet 저장. 프레임 하나가 한 행
+  observation.images.cam_high         # VideoFrame: {'path': mp4 경로, 'timestamp': 비디오 내 시각 (float32)}
+  observation.state                   # list[float32]: 로봇 팔 조인트 위치
+  action                              # list[float32]: 로봇 팔 조인트 목표 위치
+  episode_index                       # int64: 에피소드 번호
+  frame_index                         # int64: 에피소드 내 프레임 번호, 에피소드마다 0부터
+  timestamp                           # float32: 에피소드 내 시각
+  next.done                           # bool: 에피소드의 마지막 프레임 여부
+  index                               # int64: 데이터셋 전체 인덱스
 
-### hf_dataset 필드
+dataset.episode_data_index            # 에피소드별 행 범위
+  from                                # 1D int64: 에피소드 시작 프레임 인덱스
+  to                                  # 1D int64: 에피소드 마지막 프레임 인덱스
 
-| 필드 | 타입 | 내용 |
-|---|---|---|
-| `observation.images.cam_high` | VideoFrame | `path`: mp4 경로, `timestamp`: 비디오 내 시각(float32) |
-| `observation.state` | list[float32] | 로봇 팔 조인트 위치 |
-| `action` | list[float32] | 로봇 팔 조인트 목표 위치 |
-| `episode_index` | int64 | 에피소드 번호 |
-| `frame_index` | int64 | 에피소드 내 프레임 번호 (에피소드마다 0부터) |
-| `timestamp` | float32 | 에피소드 내 시각 |
-| `next.done` | bool | 에피소드의 마지막 프레임 여부 |
-| `index` | int64 | 데이터셋 전체 인덱스 |
+dataset.stats                         # feature별 통계 (max, mean, min, std)
+  observation.images.cam_high.max     # (채널, 1, 1) 텐서
 
-### 저장 포맷
+dataset.info                          # 메타데이터, JSON/JSONL 저장
+  codebase_version                    # str: 데이터셋 생성에 쓴 코드베이스 버전
+  fps                                 # float: 프레임 속도
+  video                               # bool: 비디오로 저장했는지 여부
+  encoding                            # dict: 비디오 인코딩 ffmpeg 옵션
 
-| 대상 | 포맷 |
-|---|---|
-| `hf_dataset` | Parquet (HF datasets) |
-| 비디오 | mp4 |
-| 메타데이터 | JSON / JSONL |
+dataset.videos_dir                    # Path: mp4 또는 png 디렉토리
+dataset.camera_keys                   # list[str]: 카메라 feature key 목록
+```
 
 기본 로컬 경로는 `~/.cache/huggingface/lerobot`, `root` 인자로 변경 가능.
 
